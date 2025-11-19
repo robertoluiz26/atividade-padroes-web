@@ -10,12 +10,18 @@
 </head>
 
 <body>
+    <!-- Cabeçalho -->
     <header>
+        <!-- Logo SVG -->
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" fill="currentColor"/>
+        </svg>
         <h1>Formulário de Interesses Musicais</h1>
     </header>
 
     <main>
         <form id="musicForm" action="#" method="post" novalidate>
+            <!-- Dados pessoais -->
             <fieldset class="personal-info">
                 <legend>Dados de Identificação Pessoal</legend>
                 <div class="form-group">
@@ -49,6 +55,7 @@
                 </div>
             </fieldset>
 
+            <!-- Estilos musicais -->
             <fieldset class="music-group">
                 <legend>Estilos Musicais Preferidos <span class="required">*</span> (selecione 1 ou mais):</legend>
                 <div class="checkbox-group">
@@ -115,6 +122,7 @@
                 <span class="error-message" id="error-estilos" role="alert"></span>
             </fieldset>
 
+            <!-- Álbuns preferidos -->
             <fieldset class="music-group">
                 <legend>Álbuns Preferidos <span class="required">*</span> (selecione exatamente 3):</legend>
                 <div class="checkbox-group">
@@ -194,6 +202,7 @@ Michael Jackson"></textarea>
                 </div>
             </fieldset>
 
+            <!-- Melhor cantor -->
             <fieldset class="music-group">
                 <legend>Melhor Cantor(a) da História</legend>
                 <div class="form-group">
@@ -241,17 +250,14 @@ Michael Jackson"></textarea>
                 </div>
             </fieldset>
 
+            <!-- Resumo de erros -->
             <div id="error-summary" class="summary-box error-summary" role="alert" aria-live="polite" hidden>
                 <h3>Problemas encontrados:</h3>
                 <ul id="error-summary-list">
                 </ul>
             </div>
 
-            <div class="button-group">
-                <button type="submit" id="submit-btn">Enviar Formulário</button>
-                <button type="reset" id="reset-btn">Limpar Formulário</button>
-            </div>
-
+            <!-- Resumo de confirmação -->
             <div id="confirmation-summary" class="summary-box confirmation-summary" hidden>
                 <h3>Resumo dos Dados Informados</h3>
                 <div id="summary-content">
@@ -262,13 +268,20 @@ Michael Jackson"></textarea>
                 </div>
             </div>
 
+            <!-- Botões -->
+            <div class="button-group">
+                <button type="submit" id="submit-btn">Enviar Formulário</button>
+                <button type="reset" id="reset-btn">Limpar Formulário</button>
+            </div>
+
         </form>
     </main>
 
+    <!-- Rodapé -->
     <footer>
-        <p><strong>Autoria:</strong> Eduardo Kendy Pontes Veiga</p>
-        <p><strong>Contato:</strong> <a href="mailto:eveiga@alunos.utfpr.edu.br">eveiga@alunos.utfpr.edu.br</a></p>
-        <p><strong>Licença de Uso:</strong> Este trabalho está licenciado sob a <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer">Licença Creative Commons Atribuição-NãoComercial-CompartilhaIgual 4.0 Internacional</a>.</p>
+        <p><strong>Autoria:</strong> Eduardo Kendy Pontes Veiga e Roberto Luiz Vieira Filho</p>
+        <p><strong>Contato:</strong> <a href="mailto:eveiga@alunos.utfpr.edu.br">eveiga@alunos.utfpr.edu.br</a> e <a href="mailto:robertoluiz@alunos.utfpr.edu.br">robertoluiz@alunos.utfpr.edu.br</a></p>
+    <p><small>Licença de Uso: Conteúdo didático sob licença <a href="https://opensource.org/licenses/MIT" target="_blank">MIT</a>.</small></p>
         <p>&copy; 2025 Atividade de Formulários - UTFPR</p>
     </footer>
 </body>

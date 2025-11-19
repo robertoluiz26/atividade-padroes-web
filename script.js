@@ -1,11 +1,13 @@
-// Constantes
+// Idade mínima permitida
 const MIN_AGE = 18;
-// Data mínima baseada na maior idade registrada nos últimos 10 anos (aproximadamente 120 anos)
-// Considerando 2024 como referência, data mínima seria 1904, mas usaremos 1900 para ser conservador
-const MIN_BIRTH_DATE = '1900-01-01';
-const MAX_BIRTH_DATE = new Date();
-MAX_BIRTH_DATE.setFullYear(MAX_BIRTH_DATE.getFullYear() - MIN_AGE);
-const MAX_BIRTH_DATE_STR = MAX_BIRTH_DATE.toISOString().split('T')[0];
+const MIN_BIRTH_DATE = '1903-01-02';
+
+// Calcula a data máxima (hoje - 18 anos)
+const hoje = new Date();
+const anoMaximo = hoje.getFullYear() - MIN_AGE;
+const mesMaximo = hoje.getMonth();
+const diaMaximo = hoje.getDate();
+const MAX_BIRTH_DATE_STR = anoMaximo + '-' + String(mesMaximo + 1).padStart(2, '0') + '-' + String(diaMaximo).padStart(2, '0');
 
 // Elementos do formulário
 const form = document.getElementById('musicForm');
@@ -13,6 +15,7 @@ const errorSummary = document.getElementById('error-summary');
 const errorSummaryList = document.getElementById('error-summary-list');
 const confirmationSummary = document.getElementById('confirmation-summary');
 const summaryContent = document.getElementById('summary-content');
+const buttonGroup = document.querySelector('.button-group');
 
 // Campos do formulário
 const fields = {
@@ -27,118 +30,166 @@ const fields = {
     melhor_cantor: document.getElementById('melhor_cantor')
 };
 
-// Erros de validação
 const errors = {};
 
-// Configurar data máxima de nascimento
+// Define data máxima no campo de nascimento
 fields.nascimento.setAttribute('max', MAX_BIRTH_DATE_STR);
 
-// Função para limpar erros de um campo
+// Limpa o erro de um campo
 function clearFieldError(fieldName) {
-    const errorElement = document.getElementById(`error-${fieldName}`);
+    const errorElement = document.getElementById('error-' + fieldName);
     if (errorElement) {
         errorElement.textContent = '';
-        errorElement.classList.remove('error');
     }
     
-    const field = fields[fieldName] || document.getElementById(fieldName);
+    let field = fields[fieldName];
+    if (!field) {
+        field = document.getElementById(fieldName);
+    }
+    
     if (field) {
-        field.classList.remove('error');
-        field.classList.add('valid');
+        if (field.length) {
+            // É um array de checkboxes
+            for (let i = 0; i < field.length; i++) {
+                field[i].classList.remove('error');
+                field[i].classList.add('valid');
+            }
+        } else {
+            // É um campo único
+            field.classList.remove('error');
+            field.classList.add('valid');
+        }
     }
-    
     delete errors[fieldName];
 }
 
-// Função para mostrar erro em um campo
+// Mostra erro em um campo
 function showFieldError(fieldName, message) {
-    const errorElement = document.getElementById(`error-${fieldName}`);
+    const errorElement = document.getElementById('error-' + fieldName);
     if (errorElement) {
         errorElement.textContent = message;
     }
     
-    const field = fields[fieldName] || document.getElementById(fieldName);
+    let field = fields[fieldName];
+    if (!field) {
+        field = document.getElementById(fieldName);
+    }
+    
     if (field) {
-        field.classList.add('error');
-        field.classList.remove('valid');
+        if (field.length) {
+            // É um array de checkboxes
+            for (let i = 0; i < field.length; i++) {
+                field[i].classList.add('error');
+                field[i].classList.remove('valid');
+            }
+        } else {
+            // É um campo único
+            field.classList.add('error');
+            field.classList.remove('valid');
+        }
     }
     
     errors[fieldName] = message;
 }
 
-// Validação de nome
+// Valida nome
 function validateNome() {
     const nome = fields.nome.value.trim();
-    if (!nome) {
+    
+    if (nome === '') {
         showFieldError('nome', 'O nome é obrigatório.');
         return false;
     }
+    
     if (nome.length < 2) {
         showFieldError('nome', 'O nome deve ter pelo menos 2 caracteres.');
         return false;
     }
-    if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(nome)) {
+    
+    // Verifica se tem só letras
+    let temSoLetras = true;
+    for (let i = 0; i < nome.length; i++) {
+        const char = nome[i];
+        if (!((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || char === ' ' || char === 'À' || char === 'à')) {
+            temSoLetras = false;
+            break;
+        }
+    }
+    
+    if (!temSoLetras) {
         showFieldError('nome', 'O nome deve conter apenas letras e espaços.');
         return false;
     }
+    
     clearFieldError('nome');
     return true;
 }
 
-// Validação de email
+// Valida email
 function validateEmail() {
     const email = fields.email.value.trim();
-    if (!email) {
+    
+    if (email === '') {
         showFieldError('email', 'O e-mail é obrigatório.');
         return false;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    
+    // Verifica se tem @ e ponto
+    if (email.indexOf('@') === -1 || email.indexOf('.') === -1) {
         showFieldError('email', 'Por favor, insira um e-mail válido.');
         return false;
     }
+    
+    // Verifica se o @ vem antes do ponto
+    if (email.indexOf('@') > email.lastIndexOf('.')) {
+        showFieldError('email', 'Por favor, insira um e-mail válido.');
+        return false;
+    }
+    
     clearFieldError('email');
     return true;
 }
 
-// Validação de telefone
+// Valida telefone
 function validateTelefone() {
     const telefone = fields.telefone.value.trim();
-    if (!telefone) {
+    
+    if (telefone === '') {
         showFieldError('telefone', 'O telefone é obrigatório.');
         return false;
     }
-    // Formato: (xx) xxxxx-xxxx ou (xx) xxxx-xxxx
-    const telefoneRegex = /^\(\d{2}\)\s\d{4,5}-\d{4}$/;
-    if (!telefoneRegex.test(telefone)) {
+    
+    // Verifica formato básico: (xx) xxxxx-xxxx
+    if (telefone.length < 14 || telefone[0] !== '(' || telefone[3] !== ')' || telefone[4] !== ' ' || telefone.indexOf('-') === -1) {
         showFieldError('telefone', 'Por favor, insira um telefone no formato (xx) xxxxx-xxxx.');
         return false;
     }
+    
     clearFieldError('telefone');
     return true;
 }
 
-// Validação de data de nascimento
+// Valida data de nascimento
 function validateNascimento() {
     const nascimento = fields.nascimento.value;
-    if (!nascimento) {
+    
+    if (nascimento === '') {
         showFieldError('nascimento', 'A data de nascimento é obrigatória.');
         return false;
     }
     
-    const birthDate = new Date(nascimento);
-    const today = new Date();
-    const age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    const dayDiff = today.getDate() - birthDate.getDate();
+    // Calcula idade
+    const dataNasc = new Date(nascimento);
+    const hoje = new Date();
+    let idade = hoje.getFullYear() - dataNasc.getFullYear();
     
-    let actualAge = age;
-    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-        actualAge--;
+    // Ajusta se ainda não fez aniversário
+    if (hoje.getMonth() < dataNasc.getMonth() || (hoje.getMonth() === dataNasc.getMonth() && hoje.getDate() < dataNasc.getDate())) {
+        idade--;
     }
     
-    if (actualAge < MIN_AGE) {
-        showFieldError('nascimento', `Você deve ter pelo menos ${MIN_AGE} anos para enviar o formulário.`);
+    if (idade < MIN_AGE) {
+        showFieldError('nascimento', 'Você deve ter pelo menos 18 anos para enviar o formulário.');
         return false;
     }
     
@@ -148,7 +199,7 @@ function validateNascimento() {
     }
     
     if (nascimento > MAX_BIRTH_DATE_STR) {
-        showFieldError('nascimento', `Você deve ter pelo menos ${MIN_AGE} anos para enviar o formulário.`);
+        showFieldError('nascimento', 'Você deve ter pelo menos 18 anos para enviar o formulário.');
         return false;
     }
     
@@ -156,17 +207,18 @@ function validateNascimento() {
     return true;
 }
 
-// Validação de foto
+// Valida foto
 function validateFoto() {
     const foto = fields.foto.files[0];
     if (foto) {
-        const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-        if (!validTypes.includes(foto.type)) {
+        // Verifica tipo
+        const tipo = foto.type;
+        if (tipo !== 'image/jpeg' && tipo !== 'image/jpg' && tipo !== 'image/png' && tipo !== 'image/gif' && tipo !== 'image/webp') {
             showFieldError('foto', 'Por favor, selecione uma imagem válida (JPEG, PNG, GIF ou WebP).');
             return false;
         }
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (foto.size > maxSize) {
+        // Verifica tamanho (5MB)
+        if (foto.size > 5 * 1024 * 1024) {
             showFieldError('foto', 'A imagem deve ter no máximo 5MB.');
             return false;
         }
@@ -175,47 +227,71 @@ function validateFoto() {
     return true;
 }
 
-// Validação de estilos musicais
+// Valida estilos
 function validateEstilos() {
-    const selectedEstilos = Array.from(fields.estilos).filter(cb => cb.checked);
-    if (selectedEstilos.length === 0) {
+    let contador = 0;
+    for (let i = 0; i < fields.estilos.length; i++) {
+        if (fields.estilos[i].checked) {
+            contador++;
+        }
+    }
+    
+    if (contador === 0) {
         showFieldError('estilos', 'Selecione pelo menos um estilo musical.');
         return false;
     }
+    
     clearFieldError('estilos');
     return true;
 }
 
-// Validação de álbuns (exatamente 3)
+// Valida álbuns (tem que ser exatamente 3)
 function validateAlbuns() {
-    const selectedAlbuns = Array.from(fields.albuns).filter(cb => cb.checked);
-    if (selectedAlbuns.length === 0) {
+    let contador = 0;
+    for (let i = 0; i < fields.albuns.length; i++) {
+        if (fields.albuns[i].checked) {
+            contador++;
+        }
+    }
+    
+    if (contador === 0) {
         showFieldError('albuns', 'Selecione exatamente 3 álbuns preferidos.');
         return false;
     }
-    if (selectedAlbuns.length < 3) {
-        showFieldError('albuns', `Você selecionou ${selectedAlbuns.length} álbum(ns). Selecione exatamente 3.`);
+    
+    if (contador < 3) {
+        showFieldError('albuns', 'Você selecionou ' + contador + ' álbum(ns). Selecione exatamente 3.');
         return false;
     }
-    if (selectedAlbuns.length > 3) {
-        showFieldError('albuns', `Você selecionou ${selectedAlbuns.length} álbuns. Selecione exatamente 3.`);
+    
+    if (contador > 3) {
+        showFieldError('albuns', 'Você selecionou ' + contador + ' álbuns. Selecione exatamente 3.');
         return false;
     }
+    
     clearFieldError('albuns');
     return true;
 }
 
-// Validação de artistas
+// Valida artistas
 function validateArtistas() {
     const artistas = fields.artistas.value.trim();
-    const selectedEstilos = Array.from(fields.estilos).filter(cb => cb.checked);
     
-    if (selectedEstilos.length > 0 && !artistas) {
+    // Verifica se escolheu estilos
+    let temEstilos = false;
+    for (let i = 0; i < fields.estilos.length; i++) {
+        if (fields.estilos[i].checked) {
+            temEstilos = true;
+            break;
+        }
+    }
+    
+    if (temEstilos && artistas === '') {
         showFieldError('artistas', 'Por favor, liste os artistas dos estilos escolhidos.');
         return false;
     }
     
-    if (artistas && artistas.length < 3) {
+    if (artistas !== '' && artistas.length < 3) {
         showFieldError('artistas', 'A lista de artistas deve ter pelo menos 3 caracteres.');
         return false;
     }
@@ -224,10 +300,9 @@ function validateArtistas() {
     return true;
 }
 
-// Validação de melhor cantor
+// Valida melhor cantor
 function validateMelhorCantor() {
-    const melhorCantor = fields.melhor_cantor.value;
-    if (!melhorCantor) {
+    if (fields.melhor_cantor.value === '') {
         showFieldError('melhor_cantor', 'Selecione o melhor cantor(a) da história.');
         return false;
     }
@@ -235,46 +310,46 @@ function validateMelhorCantor() {
     return true;
 }
 
-// Validação completa do formulário
+// Valida todo o formulário
 function validateForm() {
-    // Limpar erros anteriores
-    Object.keys(errors).forEach(key => clearFieldError(key));
+    // Limpa erros anteriores
+    for (let key in errors) {
+        clearFieldError(key);
+    }
     errorSummary.hidden = true;
     errorSummaryList.innerHTML = '';
     confirmationSummary.hidden = true;
     
-    // Validar todos os campos
-    const validations = [
-        { name: 'nome', fn: validateNome },
-        { name: 'email', fn: validateEmail },
-        { name: 'telefone', fn: validateTelefone },
-        { name: 'nascimento', fn: validateNascimento },
-        { name: 'foto', fn: validateFoto },
-        { name: 'estilos', fn: validateEstilos },
-        { name: 'albuns', fn: validateAlbuns },
-        { name: 'artistas', fn: validateArtistas },
-        { name: 'melhor_cantor', fn: validateMelhorCantor }
-    ];
+    if (buttonGroup) {
+        buttonGroup.style.display = 'flex';
+    }
     
-    let isValid = true;
-    validations.forEach(({ name, fn }) => {
-        if (!fn()) {
-            isValid = false;
-        }
-    });
+    // Valida cada campo
+    let tudoOk = true;
     
-    // Se houver erros, mostrar resumo
-    if (!isValid) {
+    if (!validateNome()) tudoOk = false;
+    if (!validateEmail()) tudoOk = false;
+    if (!validateTelefone()) tudoOk = false;
+    if (!validateNascimento()) tudoOk = false;
+    if (!validateFoto()) tudoOk = false;
+    if (!validateEstilos()) tudoOk = false;
+    if (!validateAlbuns()) tudoOk = false;
+    if (!validateArtistas()) tudoOk = false;
+    if (!validateMelhorCantor()) tudoOk = false;
+    
+    if (!tudoOk) {
         showErrorSummary();
+        setTimeout(function() {
+            errorSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
         return false;
     }
     
-    // Se não houver erros, mostrar resumo de confirmação
     showConfirmationSummary();
-    return false; // Retornar false para prevenir submit real
+    return false;
 }
 
-// Mostrar resumo de erros
+// Mostra resumo de erros
 function showErrorSummary() {
     if (Object.keys(errors).length === 0) {
         errorSummary.hidden = true;
@@ -282,9 +357,14 @@ function showErrorSummary() {
     }
     
     errorSummary.hidden = false;
+    
+    if (buttonGroup) {
+        buttonGroup.style.display = 'flex';
+    }
+    
     errorSummaryList.innerHTML = '';
     
-    const fieldLabels = {
+    const nomes = {
         'nome': 'Nome',
         'email': 'E-mail',
         'telefone': 'Telefone',
@@ -296,137 +376,144 @@ function showErrorSummary() {
         'melhor_cantor': 'Melhor Cantor(a)'
     };
     
-    Object.keys(errors).forEach(fieldName => {
+    for (let campo in errors) {
         const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = '#';
-        a.textContent = `${fieldLabels[fieldName] || fieldName}: ${errors[fieldName]}`;
-        a.addEventListener('click', (e) => {
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = nomes[campo] + ': ' + errors[campo];
+        link.onclick = function(e) {
             e.preventDefault();
-            focusField(fieldName);
-        });
-        li.appendChild(a);
+            focusField(campo);
+        };
+        li.appendChild(link);
         errorSummaryList.appendChild(li);
-    });
-    
-    // Scroll para o resumo de erros
-    errorSummary.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-// Focar em um campo específico
-function focusField(fieldName) {
-    let field = fields[fieldName];
-    
-    if (!field) {
-        // Para checkboxes, focar no primeiro
-        if (fieldName === 'estilos') {
-            field = fields.estilos[0];
-        } else if (fieldName === 'albuns') {
-            field = fields.albuns[0];
-        } else {
-            field = document.getElementById(fieldName);
-        }
     }
     
-    if (field) {
-        field.focus();
-        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-        // Se for checkbox, destacar visualmente
-        if (field.type === 'checkbox') {
-            field.parentElement.style.backgroundColor = '#fff3cd';
-            setTimeout(() => {
-                field.parentElement.style.backgroundColor = '';
-            }, 2000);
+    setTimeout(function() {
+        errorSummary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+// Foca no campo com erro
+function focusField(campo) {
+    const element = fields[campo];
+
+    if (!element) return;
+
+    if (element instanceof NodeList) {
+        if (element.length > 0) {
+            element[0].focus();
         }
+    } else {
+        element.focus();
     }
 }
 
-// Mostrar resumo de confirmação
+// Mostra resumo de confirmação
 function showConfirmationSummary() {
     confirmationSummary.hidden = false;
     summaryContent.innerHTML = '';
     
-    // Coletar dados do formulário
-    const data = {
-        nome: fields.nome.value.trim(),
-        email: fields.email.value.trim(),
-        telefone: fields.telefone.value.trim(),
-        nascimento: formatDate(fields.nascimento.value),
-        foto: fields.foto.files[0] ? fields.foto.files[0].name : 'Nenhuma foto selecionada',
-        estilos: Array.from(fields.estilos)
-            .filter(cb => cb.checked)
-            .map(cb => {
-                const label = document.querySelector(`label[for="${cb.id}"]`);
-                return label ? label.textContent : cb.value;
-            }),
-        albuns: Array.from(fields.albuns)
-            .filter(cb => cb.checked)
-            .map(cb => {
-                const label = document.querySelector(`label[for="${cb.id}"]`);
-                return label ? label.textContent : cb.value;
-            }),
-        artistas: fields.artistas.value.trim() || 'Nenhum artista listado',
-        melhor_cantor: fields.melhor_cantor.options[fields.melhor_cantor.selectedIndex].text
-    };
+    if (buttonGroup) {
+        buttonGroup.style.display = 'none';
+    }
     
-    // Criar resumo HTML
-    const summaryHTML = `
-        <p><strong>Nome:</strong> ${escapeHtml(data.nome)}</p>
-        <p><strong>E-mail:</strong> ${escapeHtml(data.email)}</p>
-        <p><strong>Telefone:</strong> ${escapeHtml(data.telefone)}</p>
-        <p><strong>Data de Nascimento:</strong> ${escapeHtml(data.nascimento)}</p>
-        <p><strong>Foto de Perfil:</strong> ${escapeHtml(data.foto)}</p>
-        <p><strong>Estilos Musicais:</strong> ${data.estilos.map(e => escapeHtml(e)).join(', ')}</p>
-        <p><strong>Álbuns Preferidos:</strong> ${data.albuns.map(a => escapeHtml(a)).join(', ')}</p>
-        <p><strong>Artistas:</strong> ${escapeHtml(data.artistas)}</p>
-        <p><strong>Melhor Cantor(a):</strong> ${escapeHtml(data.melhor_cantor)}</p>
-    `;
+    // Pega os dados
+    const nome = fields.nome.value.trim();
+    const email = fields.email.value.trim();
+    const telefone = fields.telefone.value.trim();
+    const nascimento = formatDate(fields.nascimento.value);
+    const foto = fields.foto.files[0] ? fields.foto.files[0].name : 'Nenhuma foto selecionada';
     
-    summaryContent.innerHTML = summaryHTML;
+    // Pega estilos selecionados
+    const estilos = [];
+    for (let i = 0; i < fields.estilos.length; i++) {
+        if (fields.estilos[i].checked) {
+            const label = document.querySelector('label[for="' + fields.estilos[i].id + '"]');
+            estilos.push(label ? label.textContent : fields.estilos[i].value);
+        }
+    }
     
-    // Scroll para o resumo
+    // Pega álbuns selecionados
+    const albuns = [];
+    for (let i = 0; i < fields.albuns.length; i++) {
+        if (fields.albuns[i].checked) {
+            const label = document.querySelector('label[for="' + fields.albuns[i].id + '"]');
+            albuns.push(label ? label.textContent : fields.albuns[i].value);
+        }
+    }
+    
+    const artistas = fields.artistas.value.trim() || 'Nenhum artista listado';
+    const melhorCantor = fields.melhor_cantor.options[fields.melhor_cantor.selectedIndex].text;
+    
+    // Monta o HTML do resumo
+    let html = '<p><strong>Nome:</strong> ' + escapeHtml(nome) + '</p>';
+    html += '<p><strong>E-mail:</strong> ' + escapeHtml(email) + '</p>';
+    html += '<p><strong>Telefone:</strong> ' + escapeHtml(telefone) + '</p>';
+    html += '<p><strong>Data de Nascimento:</strong> ' + escapeHtml(nascimento) + '</p>';
+    html += '<p><strong>Foto de Perfil:</strong> ' + escapeHtml(foto) + '</p>';
+    html += '<p><strong>Estilos Musicais:</strong> ';
+    for (let i = 0; i < estilos.length; i++) {
+        html += escapeHtml(estilos[i]);
+        if (i < estilos.length - 1) html += ', ';
+    }
+    html += '</p>';
+    html += '<p><strong>Álbuns Preferidos:</strong> ';
+    for (let i = 0; i < albuns.length; i++) {
+        html += escapeHtml(albuns[i]);
+        if (i < albuns.length - 1) html += ', ';
+    }
+    html += '</p>';
+    html += '<p><strong>Artistas:</strong> ' + escapeHtml(artistas) + '</p>';
+    html += '<p><strong>Melhor Cantor(a):</strong> ' + escapeHtml(melhorCantor) + '</p>';
+    
+    summaryContent.innerHTML = html;
+    
     confirmationSummary.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// Formatar data
+// Formata data para exibição
 function formatDate(dateStr) {
     if (!dateStr) return '';
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('pt-BR');
+    const partes = dateStr.split('-');
+    return partes[2] + '/' + partes[1] + '/' + partes[0];
 }
 
-// Escapar HTML
+// Escapa HTML para segurança
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
-// Event listeners para validação em tempo real
+// Validação em tempo real
 fields.nome.addEventListener('blur', validateNome);
-fields.nome.addEventListener('input', () => {
+fields.nome.addEventListener('input', function() {
     if (fields.nome.classList.contains('error')) {
         validateNome();
     }
 });
 
 fields.email.addEventListener('blur', validateEmail);
-fields.email.addEventListener('input', () => {
+fields.email.addEventListener('input', function() {
     if (fields.email.classList.contains('error')) {
         validateEmail();
     }
 });
 
 fields.telefone.addEventListener('blur', validateTelefone);
-fields.telefone.addEventListener('input', () => {
+fields.telefone.addEventListener('input', function() {
     if (fields.telefone.classList.contains('error')) {
         validateTelefone();
     }
 });
 
 fields.nascimento.addEventListener('blur', validateNascimento);
-fields.nascimento.addEventListener('change', () => {
+fields.nascimento.addEventListener('change', function() {
     if (fields.nascimento.classList.contains('error')) {
         validateNascimento();
     }
@@ -434,93 +521,215 @@ fields.nascimento.addEventListener('change', () => {
 
 fields.foto.addEventListener('change', validateFoto);
 
-fields.estilos.forEach(checkbox => {
-    checkbox.addEventListener('change', () => {
+for (let i = 0; i < fields.estilos.length; i++) {
+    fields.estilos[i].addEventListener('change', function() {
         if (document.getElementById('error-estilos').textContent) {
             validateEstilos();
         }
     });
-});
+}
 
-fields.albuns.forEach(checkbox => {
-    checkbox.addEventListener('change', () => {
-        if (document.getElementById('error-albuns').textContent) {
+// Limita seleção de álbuns a 3
+for (let i = 0; i < fields.albuns.length; i++) {
+    fields.albuns[i].addEventListener('change', function() {
+        let contador = 0;
+        for (let j = 0; j < fields.albuns.length; j++) {
+            if (fields.albuns[j].checked) {
+                contador++;
+            }
+        }
+        
+        // Se tentou marcar e já tem 3 ou mais, desmarca e mostra erro
+        if (this.checked && contador > 3) {
+            this.checked = false;
+            showFieldError('albuns', 'Você pode selecionar no máximo 3 álbuns.');
+            // Recalcula contador após desmarcar
+            contador = 0;
+            for (let j = 0; j < fields.albuns.length; j++) {
+                if (fields.albuns[j].checked) {
+                    contador++;
+                }
+            }
+        }
+        
+        // Valida normalmente se não excedeu o limite
+        if (contador <= 3) {
             validateAlbuns();
         }
     });
-});
+}
 
 fields.artistas.addEventListener('blur', validateArtistas);
-fields.artistas.addEventListener('input', () => {
+fields.artistas.addEventListener('input', function() {
     if (fields.artistas.classList.contains('error')) {
         validateArtistas();
     }
 });
 
-fields.melhor_cantor.addEventListener('change', () => {
+fields.melhor_cantor.addEventListener('change', function() {
     if (fields.melhor_cantor.classList.contains('error')) {
         validateMelhorCantor();
     }
 });
 
-// Formatar telefone automaticamente
-fields.telefone.addEventListener('input', (e) => {
-    let value = e.target.value.replace(/\D/g, '');
-    if (value.length <= 11) {
-        if (value.length <= 2) {
-            value = value ? `(${value}` : value;
-        } else if (value.length <= 7) {
-            value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
-        } else if (value.length <= 10) {
-            value = `(${value.slice(0, 2)}) ${value.slice(2, 6)}-${value.slice(6)}`;
-        } else {
-            value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`;
+// Formata telefone enquanto digita
+fields.telefone.addEventListener('input', function(e) {
+    let valor = e.target.value;
+    // Remove tudo que não é número
+    let numeros = '';
+    for (let i = 0; i < valor.length; i++) {
+        if (valor[i] >= '0' && valor[i] <= '9') {
+            numeros += valor[i];
         }
-        e.target.value = value;
     }
+    
+    // Formata conforme vai digitando
+    let formatado = '';
+    if (numeros.length <= 2) {
+        formatado = numeros.length > 0 ? '(' + numeros : '';
+    } else if (numeros.length <= 7) {
+        formatado = '(' + numeros.substring(0, 2) + ') ' + numeros.substring(2);
+    } else if (numeros.length <= 10) {
+        formatado = '(' + numeros.substring(0, 2) + ') ' + numeros.substring(2, 6) + '-' + numeros.substring(6);
+    } else {
+        formatado = '(' + numeros.substring(0, 2) + ') ' + numeros.substring(2, 7) + '-' + numeros.substring(7, 11);
+    }
+    
+    e.target.value = formatado;
 });
 
 // Submit do formulário
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', function(e) {
     e.preventDefault();
     validateForm();
 });
 
-// Botão de confirmação
-document.getElementById('confirm-submit').addEventListener('click', () => {
-    alert('Formulário enviado com sucesso!');
+// Listener no botão de submit
+const submitBtn = document.getElementById('submit-btn');
+if (submitBtn) {
+    submitBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        validateForm();
+    });
+}
+
+// Prepara dados para envio
+function prepareFormData() {
+    const estilos = [];
+    for (let i = 0; i < fields.estilos.length; i++) {
+        if (fields.estilos[i].checked) {
+            estilos.push(fields.estilos[i].value);
+        }
+    }
+    
+    const albuns = [];
+    for (let i = 0; i < fields.albuns.length; i++) {
+        if (fields.albuns[i].checked) {
+            albuns.push(fields.albuns[i].value);
+        }
+    }
+    
+    return {
+        nome: fields.nome.value.trim(),
+        email: fields.email.value.trim(),
+        telefone: fields.telefone.value.trim(),
+        nascimento: fields.nascimento.value,
+        foto: fields.foto.files[0] ? fields.foto.files[0].name : 'Nenhuma foto selecionada',
+        estilos: estilos,
+        albuns: albuns,
+        artistas: fields.artistas.value.trim() || 'Nenhum artista listado',
+        melhor_cantor: fields.melhor_cantor.value
+    };
+}
+
+// Finaliza envio
+function finalizeSubmission(data) {
+    alert('Formulário enviado com sucesso!\n\nOs dados foram processados e enviados.');
+    
     form.reset();
     confirmationSummary.hidden = true;
-    Object.keys(fields).forEach(key => {
-        if (fields[key] && fields[key].classList) {
-            fields[key].classList.remove('error', 'valid');
+    
+    // Limpa classes de validação
+    for (let key in fields) {
+        const field = fields[key];
+        if (field) {
+            if (field.length) {
+                for (let i = 0; i < field.length; i++) {
+                    field[i].classList.remove('error', 'valid');
+                }
+            } else {
+                field.classList.remove('error', 'valid');
+            }
         }
-    });
+    }
+    
+    // Limpa erros
+    for (let key in errors) {
+        clearFieldError(key);
+    }
+    errorSummary.hidden = true;
+    errorSummaryList.innerHTML = '';
+    
+    if (buttonGroup) {
+        buttonGroup.style.display = 'flex';
+    }
+    
     fields.nome.focus();
+}
+
+// Envia os dados
+function submitFormData() {
+    const confirmBtn = document.getElementById('confirm-submit');
+    const textoOriginal = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Enviando...';
+    
+    const dados = prepareFormData();
+    
+    setTimeout(function() {
+        finalizeSubmission(dados);
+    }, 500);
+}
+
+
+// Botão de confirmação
+document.getElementById('confirm-submit').addEventListener('click', function() {
+    submitFormData();
 });
 
-// Botão de cancelar confirmação
-document.getElementById('cancel-submit').addEventListener('click', () => {
+// Botão de cancelar
+document.getElementById('cancel-submit').addEventListener('click', function() {
     confirmationSummary.hidden = true;
+    if (buttonGroup) {
+        buttonGroup.style.display = 'flex';
+    }
 });
 
 // Reset do formulário
-form.addEventListener('reset', () => {
-    // Limpar todos os erros
-    Object.keys(errors).forEach(key => clearFieldError(key));
+form.addEventListener('reset', function() {
+    // Limpa erros
+    for (let key in errors) {
+        clearFieldError(key);
+    }
     errorSummary.hidden = true;
     errorSummaryList.innerHTML = '';
     confirmationSummary.hidden = true;
     
-    // Remover classes de validação
-    Object.keys(fields).forEach(key => {
-        if (fields[key] && fields[key].classList) {
-            fields[key].classList.remove('error', 'valid');
+    // Remove classes de validação
+    for (let key in fields) {
+        const field = fields[key];
+        if (field) {
+            if (field.length) {
+                for (let i = 0; i < field.length; i++) {
+                    field[i].classList.remove('error', 'valid');
+                }
+            } else if (field.classList) {
+                field.classList.remove('error', 'valid');
+            }
         }
-    });
+    }
     
-    // Focar no primeiro campo após reset
-    setTimeout(() => {
+    setTimeout(function() {
         fields.nome.focus();
     }, 100);
 });
